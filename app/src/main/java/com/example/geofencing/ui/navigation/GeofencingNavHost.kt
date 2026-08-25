@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.geofencing.ui.home.HomeScreen
+import com.example.geofencing.ui.login.AuthViewModel
 import com.example.geofencing.ui.login.LoginScreen
 import com.example.geofencing.ui.wholesector.WholeSectorViewModel
 
@@ -44,9 +45,18 @@ fun GeofencingNavHost(
             // Sector/Cart ViewModel은 HomeScreen 내부에서 hiltViewModel()로 연결한다.
             val viewModel: WholeSectorViewModel = hiltViewModel()
             val wholeSectorState by viewModel.state.collectAsState()
+            val authViewModel: AuthViewModel = hiltViewModel()
             HomeScreen(
                 wholeSectorState = wholeSectorState,
-                onWholeSectorRetry = viewModel::retry
+                onWholeSectorRetry = viewModel::retry,
+                onLogout = {
+                    // 로그아웃 → Login. Main을 스택에서 제거해 뒤로가기로 돌아오지 못하게 한다.
+                    authViewModel.logout {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Main.route) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
     }

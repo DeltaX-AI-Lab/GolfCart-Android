@@ -13,6 +13,9 @@ import javax.inject.Singleton
 interface AuthRepository {
     // 성공하면 Result.success, 실패하면 Result.failure(사람이 읽을 메시지 포함).
     suspend fun login(id: String, password: String): Result<Unit>
+
+    // 세션 정리(로그아웃). 스텁은 저장된 세션이 없어 no-op.
+    suspend fun logout()
 }
 
 // 임시 스텁 — 실제 백엔드 인증 붙기 전 흐름을 완성하기 위한 구현.
@@ -28,6 +31,10 @@ class StubAuthRepository @Inject constructor() : AuthRepository {
             id == DEMO_ID && password == DEMO_PW -> Result.success(Unit)
             else -> Result.failure(IllegalStateException("아이디 또는 비밀번호가 올바르지 않습니다."))
         }
+    }
+
+    override suspend fun logout() {
+        // 스텁은 저장된 세션이 없어 별도 정리 없음. 실제 인증 시 토큰/세션 삭제.
     }
 
     private companion object {

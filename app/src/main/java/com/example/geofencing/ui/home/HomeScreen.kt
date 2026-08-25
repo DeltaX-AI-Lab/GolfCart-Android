@@ -44,7 +44,7 @@ fun HomeScreen(
     wholeSectorState: LoadState<WholeSectorUiState>,
     modifier: Modifier = Modifier,
     onWholeSectorRetry: () -> Unit = {},
-    onBellClick: () -> Unit = {}
+    onLogout: () -> Unit = {}
 ) {
     // 0 = Whole Sector, 1.. = sectorNames
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -105,10 +105,7 @@ fun HomeScreen(
             AppTopBar(
                 title = APP_TITLE,
                 onSearchClick = { showSearch = true },
-                onBellClick = {
-                    analytics.log(AnalyticsEvent.BellClicked)
-                    onBellClick()
-                }
+                onLogout = onLogout
             )
             SectorTabRow(
                 sectorNames = sectorNames,

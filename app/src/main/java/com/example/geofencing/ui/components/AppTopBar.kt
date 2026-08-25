@@ -1,12 +1,19 @@
 package com.example.geofencing.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,7 +28,7 @@ import com.example.geofencing.ui.theme.extendedColors
 fun AppTopBar(
     title: String,
     onSearchClick: () -> Unit,
-    onBellClick: () -> Unit,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -48,12 +55,28 @@ fun AppTopBar(
                 onClick = onSearchClick,
                 size = 24.dp
             )
-            AppIconButton(
-                iconRes = R.drawable.ic_notification,
-                contentDescription = "알림",
-                onClick = onBellClick,
-                size = 24.dp
-            )
+            // 알림 버튼 → 메뉴(로그아웃). 추후 알림 항목도 이 메뉴에 추가 가능.
+            Box {
+                var menuExpanded by remember { mutableStateOf(false) }
+                AppIconButton(
+                    iconRes = R.drawable.ic_notification,
+                    contentDescription = "알림",
+                    onClick = { menuExpanded = true },
+                    size = 24.dp
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("로그아웃") },
+                        onClick = {
+                            menuExpanded = false
+                            onLogout()
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -62,6 +85,6 @@ fun AppTopBar(
 @Composable
 private fun AppTopBarPreview() {
     GeofencingTheme {
-        AppTopBar(title = "Geofence", onSearchClick = {}, onBellClick = {})
+        AppTopBar(title = "Geofence", onSearchClick = {}, onLogout = {})
     }
 }
