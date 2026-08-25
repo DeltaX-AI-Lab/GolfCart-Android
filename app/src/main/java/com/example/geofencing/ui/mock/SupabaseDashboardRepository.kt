@@ -10,6 +10,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -53,17 +54,22 @@ class SupabaseDashboardRepository @Inject constructor(
         refreshTrigger
             .flatMapLatest {
                 flow {
+                    // 첫 로드만 Loading, 이후엔 주기 폴링으로 데이터만 조용히 갱신(스펙: ~10초).
+                    // WhileSubscribed라 구독자가 없으면 폴링도 멈춘다(배터리).
                     emit(LoadState.Loading)
-                    // runCatching는 CancellationException까지 삼켜 구조적 취소를 깨므로,
-                    // 취소는 다시 던지고 그 외 실패만 Error로 변환한다.
-                    val result: LoadState<List<MockSector>> = try {
-                        LoadState.Success(loadSectors())
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        LoadState.Error(e.message ?: "Failed to load data")
+                    while (true) {
+                        // runCatching는 CancellationException까지 삼켜 구조적 취소를 깨므로,
+                        // 취소는 다시 던지고 그 외 실패만 Error로 변환한다.
+                        val result: LoadState<List<MockSector>> = try {
+                            LoadState.Success(loadSectors())
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            LoadState.Error(e.message ?: "Failed to load data")
+                        }
+                        emit(result)
+                        delay(PollIntervalMs)
                     }
-                    emit(result)
                 }
             }
             .stateIn(scope, SharingStarted.WhileSubscribed(5_000), LoadState.Loading)
@@ -182,6 +188,7 @@ class SupabaseDashboardRepository @Inject constructor(
     }.recoverCatching { Instant.parse(value) }.getOrNull()
 
     private companion object {
+        const val PollIntervalMs = 10_000L // 스펙: 앱이 ~10초 주기로 폴링
         val timeFormatter: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss").withZone(ZoneId.systemDefault())
     }
