@@ -12,10 +12,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.geofencing.ui.analytics.AnalyticsEvent
@@ -26,6 +29,10 @@ import com.example.geofencing.ui.common.LoadState
 import com.example.geofencing.ui.components.AppTopBar
 import com.example.geofencing.ui.components.LoadStateContent
 import com.example.geofencing.ui.components.SectorTabRow
+import com.example.geofencing.ui.map.GeofenceMapContent
+import com.example.geofencing.ui.map.LiveGeofenceMap
+import com.example.geofencing.ui.map.MapCamera
+import com.example.geofencing.ui.map.ViolationHeatmapOverlay
 import com.example.geofencing.ui.sector.SectorPage
 import com.example.geofencing.ui.sector.SectorViewModel
 import com.example.geofencing.ui.search.SearchOverlay
@@ -34,6 +41,10 @@ import com.example.geofencing.ui.wholesector.WholeSectorPage
 import com.example.geofencing.ui.wholesector.WholeSectorUiState
 
 private const val APP_TITLE = "Geofence"
+// 배너 라이브 지도에서 geofence 가장자리 여백(dp) — FitGeofence padding.
+private const val SectorMapGeofenceMarginDp = 45
+// 히트맵 오버레이 지도 추가 확대 배율.
+private const val HeatmapZoomFactor = 1.1f
 
 // 탭 셸: AppTopBar + SectorTabRow(크롬) + body. 크롬은 항상 유지되고, body는:
 // - 드릴다운으로 열린 카트가 있으면 CartPage (뒤로가기로 닫음)
@@ -55,6 +66,18 @@ fun HomeScreen(
     // 검색 오버레이 표시 여부.
     var showSearch by rememberSaveable { mutableStateOf(false) }
 
+    // Violation Heatmap 오버레이 — 앱 최상단 레이어(크롬 위)로 띄우기 위해 SectorPage가 아닌 여기서 소유한다.
+    // 지도는 배너와 공유(movableContentOf)해 열 때 검은 플래시가 없다. showHeatmap=오버레이 표시,
+    // mapInBanner=지도 위치(배너↔오버레이)를 분리해, 닫을 때 배너 재-fit을 스크림 뒤에 숨긴다.
+    var showHeatmap by rememberSaveable { mutableStateOf(false) }
+    var mapInBanner by remember { mutableStateOf(!showHeatmap) }
+    var closingHeatmap by remember { mutableStateOf(false) }
+    val movableMap = remember {
+        movableContentOf<GeofenceMapContent, MapCamera> { content, camera ->
+            LiveGeofenceMap(content = content, camera = camera, modifier = Modifier.fillMaxSize())
+        }
+    }
+
     BackHandler(enabled = openCartTarget != null) { openCartTarget = null }
 
     val sectorViewModel: SectorViewModel = hiltViewModel()
@@ -74,6 +97,30 @@ fun HomeScreen(
 
     val sectorState by sectorViewModel.state.collectAsState()
     val cartState by cartViewModel.state.collectAsState()
+
+    // 히트맵 닫기: 오버레이가 아직 떠 있는 동안 지도를 배너로 되돌려(배너 카메라로 재-fit) 그 프레임을 스크림
+    // 뒤에 숨긴 뒤, 다음 프레임에 오버레이를 제거 → 배너에 1.1x가 잠깐 비치지 않는다.
+    LaunchedEffect(closingHeatmap) {
+        if (closingHeatmap) {
+            mapInBanner = true
+            withFrameNanos {}
+            withFrameNanos {}
+            showHeatmap = false
+            closingHeatmap = false
+        }
+    }
+    // 선택 탭이 바뀌면(전체/다른 섹터) 또는 카트 상세로 들어가면 히트맵을 닫는다.
+    // safeIndex 변화 = 다른 섹터로 전환도 포함 → 스크림 아래 stale 상태(빈 배너/재등장) 방지.
+    LaunchedEffect(safeIndex, openCartTarget) {
+        showHeatmap = false
+        mapInBanner = true
+        closingHeatmap = false
+    }
+    // 현재 섹터의 지도 콘텐츠(배너/히트맵 공용). Success일 때만 존재.
+    val sectorMapContent = (sectorState as? LoadState.Success)?.data
+        ?.let { GeofenceMapContent(geofence = it.geofence, carts = it.carts) }
+    val bannerCamera = MapCamera.FitGeofence(paddingDp = SectorMapGeofenceMarginDp)
+    val heatmapCamera = MapCamera.FitGeofence(zoomFactor = HeatmapZoomFactor)
 
     // 드릴다운 진입 지점(from)까지 기록하는 공통 경로.
     val openCart: (String, String, String) -> Unit = { sector, cart, from ->
@@ -167,6 +214,16 @@ fun HomeScreen(
                     ) { sectorUi ->
                         SectorPage(
                             state = sectorUi,
+                            // 지도 배너는 공유 지도를 여기서 주입(히트맵 오버레이와 같은 인스턴스).
+                            bannerMap = {
+                                if (mapInBanner && sectorMapContent != null) {
+                                    movableMap(sectorMapContent, bannerCamera)
+                                }
+                            },
+                            onHeatmapClick = {
+                                mapInBanner = false
+                                showHeatmap = true
+                            },
                             // 카트 클릭(violation/disconnect/all cart) → 현재 섹터의 해당 카트로 드릴다운
                             onViolationClick = { openCart(sectorName, it.cart, "sector_violation") },
                             onDisconnectClick = { openCart(sectorName, it.cart, "sector_disconnect") },
@@ -176,7 +233,16 @@ fun HomeScreen(
                 }
             }
         }
-    }
+        }
+
+        // Violation Heatmap — 앱 최상단 레이어(크롬 포함 전체를 덮는 스크림). SectorPage 밖(여기)에서
+        // 그려야 탭바 위를 덮고, 상단 패딩이 앱 최상단 기준이 된다.
+        if (showHeatmap && sectorMapContent != null) {
+            ViolationHeatmapOverlay(
+                onDismiss = { closingHeatmap = true },
+                map = { if (!mapInBanner) movableMap(sectorMapContent, heatmapCamera) }
+            )
+        }
 
         // 검색 오버레이(상단 검색 버튼). 결과 클릭 시 탭 전환/카트 드릴다운.
         if (showSearch) {
