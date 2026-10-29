@@ -249,12 +249,12 @@ WholeSector/Sector/Cart ViewModel ──(*UiMapper)──▶ *UiState ──(Sta
 `HomeRoute`가 `hiltViewModel()`로 주입. ViewModel은 Repository의 `Flow`를 `*UiMapper`로 `map`해 `stateIn(viewModelScope, WhileSubscribed(5s), Loading)`으로 화면 상태를 만든다. UI는 `collectAsState()`로 구독하고, 재시도는 `retry()` → `repository.refresh()`.
 
 ### Repository
-계약(interface)과 구현(Impl)을 분리하고 Hilt `@Binds`로 연결한다. **두 계층**이 공존한다.
+계약(interface)과 구현(Impl)을 분리하고 Hilt로 연결한다 — `data/` 계층은 `AppModule`의 `@Binds`, 대시보드 계약은 `DashboardRepositoryModule`(`ui/dashboard/DashboardRepository.kt`)의 `@Provides`. **두 계층**이 공존한다.
 - `ui/dashboard`의 `DashboardRepository` → **현행** `SupabaseDashboardRepository`(임시 Supabase 백엔드)가 실제 화면을 구동. `MockDashboardRepository`(로컬 목)도 있음.
 - `data/`의 Retrofit 기반 `CartRepository`/`SectorRepository`/… → **팀 REST BE 도입 대비** 도메인 계약. 현재 대시보드 경로에서는 주 사용 안 함.
 
 ### 로컬 저장소
-DataStore Preferences 사용 — `ViolationAckDataStore`(위반 확인 상태), `SelectedSiteDataStore`(선택 사이트). Room 등 DB는 없음.
+DataStore Preferences — `ViolationAckDataStore`(위반 확인 상태), `SelectedSiteDataStore`(선택 사이트)와 Repository가 정의·주입되어 있으나, **현재 화면에는 연결되어 있지 않다**. Room 등 DB는 없음.
 
 ### 화면 이동
 Navigation Compose 골격은 있으나 현재 route는 `main` 하나. 실질 이동은 탭/페이지 상태 + 콜백(`HomeActions`의 `onSelectSector`/`onSelectCart` 등)으로 상위 컨테이너가 페이지를 전환한다.
@@ -286,7 +286,7 @@ Kotlin `Flow`/`StateFlow` + `LoadState<T>`(`Loading`/`Success`/`Error`) 단방�
 | 네트워킹 | Retrofit 3.0.0, OkHttp 5.1.0(+logging), kotlinx.serialization 1.9.0 |
 | 비동기 | kotlinx-coroutines 1.10.2 |
 | 로컬 저장 | DataStore Preferences 1.1.1 |
-| UI/효과 | Navigation Compose 2.9.8, Haze 1.7.2(블러) |
+| UI/효과 | Navigation Compose 2.9.8, Haze 1.7.2(블러 — 메인 흐름에 미연결된 검색 UI에서만 사용) |
 | 백엔드(임시) | Supabase PostgREST (Retrofit로 접근) |
 
 ---
@@ -376,7 +376,9 @@ adb logcat | grep -Ei "AndroidRuntime|Analytics|okhttp"         # 크래시/이�
 - **버전 관리 / 릴리스 추적**: 현재 `versionName`/`versionCode` = `1.2`/`2`, 릴리스는 `v1.2` 태그로 커밋을 고정한다. 다만 버전 bump·태깅·릴리스 노트가 **수동**이고 CI 자동화가 없다 — 릴리스 스크립트/워크플로로 자동화하고 `versionCode` 증가 규칙을 정립하는 것이 좋다.
 - **데이터 레이어 이원화**: `ui/dashboard`의 Supabase 경로가 실제 화면을 구동하고, `data/`의 Retrofit 계층은 팀 REST BE 대비로 병존. 팀 BE 확정 시 `DashboardRepository` 구현을 교체하고 `data/`로 일원화 필요.
 - **네비게이션**: NavHost route가 `main` 하나뿐이고 화면 전환이 `HomeScreen` 내부 상태에 묶여 있음. 로그인/로딩 화면 도입 시 route 기반으로 재정비 필요(코드 내 TODO).
-- **Analytics**: `DebugAnalyticsLogger`는 Logcat 출력 스캐폴딩. 실제 수집 필요 시 실 구현체로 `@Binds` 교체.
+- **Analytics**: `DebugAnalyticsLogger`는 Logcat 출력 스캐폴딩. 실제 수집 필요 시 실 구현체로 Hilt 바인딩(`@Provides`) 교체.
+- **카트 마커 위치 합성**: Supabase 카트에 실좌표(`lat`/`lng`)가 없으면 `SupabaseDashboardRepository`가 지오펜스 박스 기준으로 위치를 합성한다(위반 = 바깥, 그 외 = 안쪽). 실데이터 연동 시 제거 대상.
+- **로컬 저장 미연결**: 위반 확인 · 선택 사이트 DataStore가 화면 흐름에 연결되지 않았다.
 - **테스트 커버리지**: 코어 로직/매퍼는 단위 테스트로 커버되나 ViewModel·Repository 통합 및 UI/E2E는 없음 — 확충 필요.
 
 ### 이후 유지보수 시 주의할 사항
@@ -394,6 +396,6 @@ adb logcat | grep -Ei "AndroidRuntime|Analytics|okhttp"         # 크래시/이�
 
 - **커밋 메시지**: [Conventional Commits](https://www.conventionalcommits.org) — `feat` / `fix` / `docs` / `refactor` / `test` / `chore` 등. 예: `fix(map): correct heatmap fit`.
 - **브랜치 전략**: GitHub Flow — `main`에서 분기 → PR로 병합. 병합은 **Squash & Merge**(PR 1개 = `main` 커밋 1개), 병합 후 브랜치는 삭제. **푸시된 히스토리는 리라이트하지 않는다.**
-- **리뷰/검증**: PR·`main` push 시 **CI(GitHub Actions, `.github/workflows/ci.yml`)가 빌드 + 단위 테스트를 자동 실행**한다. PR 템플릿(`.github/pull_request_template.md`)을 채운다. (detekt/ktlint·SonarQube 등 정적 분석은 아직 미도입 — 후속.)
+- **리뷰/검증**: PR·`main` push 시 **CI(GitHub Actions, `.github/workflows/ci.yml`)가 `testDebugUnitTest`(디버그 컴파일 + 단위 테스트)를 자동 실행**한다. PR 템플릿(`.github/pull_request_template.md`)을 채운다. (detekt/ktlint·SonarQube 등 정적 분석은 아직 미도입 — 후속.)
 - **코드 스타일**: 주변 코드와 일관되게 작성(네이밍·주석 밀도·관용구).
 - **시크릿**: `local.properties` · `keystore.properties` · `*.jks`는 절대 커밋 금지(gitignore 유지).
