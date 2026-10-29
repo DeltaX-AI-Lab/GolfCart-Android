@@ -10,9 +10,10 @@
  지도·리스트로 표시
 ```
 
-> ℹ️ **현재 백엔드** — 팀 REST BE는 준비 중이라, 임시로 **Supabase(PostgREST)** 가 같은 역할을 대신한다(목 데이터). 현재 화면은 Supabase 응답을 `DashboardRepository` 계약에 맞춰 조립해 구동하며, 팀 REST BE 도입 시 Repository 구현과 필드 계약을 맞춰 교체해야 한다. (자세히는 7·12장)
+> [!NOTE]
+> **현재 백엔드** — 팀 REST BE는 준비 중이라, 임시로 **Supabase(PostgREST)** 가 같은 역할을 대신한다(목 데이터). 현재 화면은 Supabase 응답을 `DashboardRepository` 계약에 맞춰 조립해 구동하며, 팀 REST BE 도입 시 Repository 구현과 필드 계약을 맞춰 교체해야 한다. (자세히는 7·12장)
 >
-> ℹ️ **읽는 순서(추천)** — 개요 → **§4 기능·화면** → **§5 도메인 용어**로 큰 그림을 잡고, 환경/실행은 §2~3, 코드 구조는 §6~7을 본다. 버전 등 세부 값은 `app/build.gradle.kts`·`gradle/libs.versions.toml` 기준.
+> **읽는 순서(추천)** — 개요 → **§4 기능·화면** → **§5 도메인 용어**로 큰 그림을 잡고, 환경/실행은 §2~3, 코드 구조는 §6~7을 본다. 버전 등 세부 값은 `app/build.gradle.kts`·`gradle/libs.versions.toml` 기준.
 
 ---
 
@@ -26,7 +27,8 @@
 | Release APK 산출물 | `app/build/outputs/apk/release/app-release.apk` (배포 파일명 예: `geofence_v1.2.apk`) |
 | Git branch / tag / commit | branch **`main`** · tag **`v1.2`** · commit **`ae397e1`** (`ae397e1128e892b28269afea2b1694862cc90eeb`) — `v1.2` 태그가 이 배포본 커밋을 고정 |
 
-> ⚠️ 외부 배포/스토어 업로드가 필요해지면 `versionName`/`versionCode` 갱신 규칙과 배포 파일명 규칙을 문서화해 두는 편이 좋다. 릴리스 절차: **버전 bump → `main` 머지 → `vX.Y` 태그 → 태그 커밋에서 `assembleRelease`**. (→ 12장)
+> [!WARNING]
+> 외부 배포/스토어 업로드가 필요해지면 `versionName`/`versionCode` 갱신 규칙과 배포 파일명 규칙을 문서화해 두는 편이 좋다. 릴리스 절차: **버전 bump → `main` 머지 → `vX.Y` 태그 → 태그 커밋에서 `assembleRelease`**. (→ 12장)
 
 ---
 
@@ -42,7 +44,8 @@
 | Compose | BOM 2026.02.01, Material 3 |
 | compileSdk / minSdk / targetSdk | 37 / 26 / 37 |
 
-> ⚠️ `gradle.properties`의 `org.gradle.java.home`은 macOS Android Studio 기본 설치 경로를 가리킨다. Android Studio 설치 위치가 다르면 이 값을 로컬 환경에 맞게 수정하거나 IDE Gradle JVM 설정으로 덮어쓴다.
+> [!WARNING]
+> `gradle.properties`의 `org.gradle.java.home`은 macOS Android Studio 기본 설치 경로를 가리킨다. Android Studio 설치 위치가 다르면 이 값을 로컬 환경에 맞게 수정하거나 IDE Gradle JVM 설정으로 덮어쓴다.
 
 ### 로컬 설정 파일
 
@@ -55,13 +58,15 @@
 
 - `.env` / `secrets.properties`는 **사용하지 않는다.** 모든 시크릿은 `local.properties` → `BuildConfig`/`manifestPlaceholders`로 주입된다.
 
-> 🔒 Supabase는 **anon(publishable) key만** 넣는다. DB password / `service_role` key는 절대 커밋·기입 금지.
+> [!CAUTION]
+> Supabase는 **anon(publishable) key만** 넣는다. DB password / `service_role` key는 절대 커밋·기입 금지.
 
 ---
 
 ## 3. 실행 방법
 
-> ℹ️ **한눈에** — `local.properties`에 Maps 키 + Supabase 키만 채우면 바로 **Run ▶** 으로 실행된다. 팀 REST BE 없이도 동작한다(현행 백엔드 = Supabase).
+> [!NOTE]
+> **한눈에** — `local.properties`에 Maps 키 + Supabase 키만 채우면 바로 **Run ▶** 으로 실행된다. 팀 REST BE 없이도 동작한다(현행 백엔드 = Supabase).
 
 ### 로컬에서 Debug 실행
 
@@ -114,7 +119,8 @@
 - **지도 모드**: 섹터 카드 썸네일 / 배너 / 전체화면(히트맵·카트 추적). 마커 = 카트(상태 색), 뒤 glow = 위반 강조. 마커/줌 상수는 Figma 실측 기반(`MapConfig` 등).
 - **상태 표현**: 로딩 / 에러(재시도) / 성공을 `LoadStateContent`가 분기.
 
-> ℹ️ **보류(기획 미확정)** — 로그인·로그아웃, 알림. 검색은 `ui/map`에 UI 컴포넌트와 REST API 골격이 일부 있으나, 현재 메인 화면 흐름에는 연결되어 있지 않다.
+> [!NOTE]
+> **보류(기획 미확정)** — 로그인·로그아웃, 알림. 검색은 `ui/map`에 UI 컴포넌트와 REST API 골격이 일부 있으나, 현재 메인 화면 흐름에는 연결되어 있지 않다.
 
 ---
 
@@ -147,15 +153,17 @@ Site (고객사, 예: "Golfzon County")
 
 **`drivingStatus`** — 주행 여부: `driving` · `idle`.
 
-> ⚠️ 팀 REST DTO는 현재 `violating`/`compliant` 중심이다. 팀 BE로 전환할 때 `disconnected`·카트 위치·위반 상세 필드 계약을 맞춰야 한다. (→ 12장)
+> [!WARNING]
+> 팀 REST DTO는 현재 `violating`/`compliant` 중심이다. 팀 BE로 전환할 때 `disconnected`·카트 위치·위반 상세 필드 계약을 맞춰야 한다. (→ 12장)
 
 ### 좌표 규약 (GeoJSON)
 
 - 모든 좌표는 GeoJSON. **Point**(단일 위치)와 **Polygon**(지오펜스 경계) 두 형태만 쓴다.
 
-> ⚠️ **`[lng, lat]` — 경도가 먼저다.** "위도, 경도" 직관과 반대이며, GeoJSON 버그 대부분이 여기서 발생한다. Android 변환은 `LatLng(coordinates[1], coordinates[0])`.
+> [!WARNING]
+> **`[lng, lat]` — 경도가 먼저다.** "위도, 경도" 직관과 반대이며, GeoJSON 버그 대부분이 여기서 발생한다. Android 변환은 `LatLng(coordinates[1], coordinates[0])`.
 >
-> ⚠️ **Polygon 링은 첫 점 = 마지막 점으로 닫힌다.** 외곽 링(`coordinates[0]`) 하나만 사용하며, 지도에 그릴 땐 닫힘점을 제거한다(`geoJsonRingToLatLng`가 처리).
+> **Polygon 링은 첫 점 = 마지막 점으로 닫힌다.** 외곽 링(`coordinates[0]`) 하나만 사용하며, 지도에 그릴 땐 닫힘점을 제거한다(`geoJsonRingToLatLng`가 처리).
 
 ### 시간
 
@@ -165,7 +173,8 @@ Site (고객사, 예: "Golfzon County")
 
 ## 6. 프로젝트 구조
 
-> ℹ️ **모듈 구성** — 단일 Gradle 모듈(`:app`) 프로젝트다. 별도 라이브러리 모듈 없이, 아래처럼 패키지 레이어(`data` / `ui` / `di` / `util`)로 분리한다.
+> [!NOTE]
+> **모듈 구성** — 단일 Gradle 모듈(`:app`) 프로젝트다. 별도 라이브러리 모듈 없이, 아래처럼 패키지 레이어(`data` / `ui` / `di` / `util`)로 분리한다.
 
 ```
 app/src/main/java/com/example/geofencing
@@ -240,12 +249,12 @@ WholeSector/Sector/Cart ViewModel ──(*UiMapper)──▶ *UiState ──(Sta
 `HomeRoute`가 `hiltViewModel()`로 주입. ViewModel은 Repository의 `Flow`를 `*UiMapper`로 `map`해 `stateIn(viewModelScope, WhileSubscribed(5s), Loading)`으로 화면 상태를 만든다. UI는 `collectAsState()`로 구독하고, 재시도는 `retry()` → `repository.refresh()`.
 
 ### Repository
-계약(interface)과 구현(Impl)을 분리하고 Hilt `@Binds`로 연결한다. **두 계층**이 공존한다.
+계약(interface)과 구현(Impl)을 분리하고 Hilt로 연결한다 — `data/` 계층은 `AppModule`의 `@Binds`, 대시보드 계약은 `DashboardRepositoryModule`(`ui/dashboard/DashboardRepository.kt`)의 `@Provides`. **두 계층**이 공존한다.
 - `ui/dashboard`의 `DashboardRepository` → **현행** `SupabaseDashboardRepository`(임시 Supabase 백엔드)가 실제 화면을 구동. `MockDashboardRepository`(로컬 목)도 있음.
 - `data/`의 Retrofit 기반 `CartRepository`/`SectorRepository`/… → **팀 REST BE 도입 대비** 도메인 계약. 현재 대시보드 경로에서는 주 사용 안 함.
 
 ### 로컬 저장소
-DataStore Preferences 사용 — `ViolationAckDataStore`(위반 확인 상태), `SelectedSiteDataStore`(선택 사이트). Room 등 DB는 없음.
+DataStore Preferences — `ViolationAckDataStore`(위반 확인 상태), `SelectedSiteDataStore`(선택 사이트)와 Repository가 정의·주입되어 있으나, **현재 화면에는 연결되어 있지 않다**. Room 등 DB는 없음.
 
 ### 화면 이동
 Navigation Compose 골격은 있으나 현재 route는 `main` 하나. 실질 이동은 탭/페이지 상태 + 콜백(`HomeActions`의 `onSelectSector`/`onSelectCart` 등)으로 상위 컨테이너가 페이지를 전환한다.
@@ -263,9 +272,10 @@ Kotlin `Flow`/`StateFlow` + `LoadState<T>`(`Loading`/`Success`/`Error`) 단방�
 | --- | --- |
 | `android.permission.INTERNET` | 지도 타일, Supabase/REST API 통신 |
 
-> ℹ️ 위치(`ACCESS_FINE_LOCATION` 등) 권한은 사용하지 않는다 — 카트 위치는 서버에서 받아 표시하며, 기기 GPS를 쓰지 않는다.
+> [!NOTE]
+> 위치(`ACCESS_FINE_LOCATION` 등) 권한은 사용하지 않는다 — 카트 위치는 서버에서 받아 표시하며, 기기 GPS를 쓰지 않는다.
 >
-> ℹ️ Debug 빌드는 `app/src/debug/AndroidManifest.xml`에서 `usesCleartextTraffic="true"`로 덮어쓰고(로컬 HTTP BE 테스트용), Release/main manifest는 `"false"`다.
+> Debug 빌드는 `app/src/debug/AndroidManifest.xml`에서 `usesCleartextTraffic="true"`로 덮어쓰고(로컬 HTTP BE 테스트용), Release/main manifest는 `"false"`다.
 
 ### 주요 외부 SDK / 라이브러리
 
@@ -276,7 +286,7 @@ Kotlin `Flow`/`StateFlow` + `LoadState<T>`(`Loading`/`Success`/`Error`) 단방�
 | 네트워킹 | Retrofit 3.0.0, OkHttp 5.1.0(+logging), kotlinx.serialization 1.9.0 |
 | 비동기 | kotlinx-coroutines 1.10.2 |
 | 로컬 저장 | DataStore Preferences 1.1.1 |
-| UI/효과 | Navigation Compose 2.9.8, Haze 1.7.2(블러) |
+| UI/효과 | Navigation Compose 2.9.8, Haze 1.7.2(블러 — 메인 흐름에 미연결된 검색 UI에서만 사용) |
 | 백엔드(임시) | Supabase PostgREST (Retrofit로 접근) |
 
 ---
@@ -303,7 +313,8 @@ Kotlin `Flow`/`StateFlow` + `LoadState<T>`(`Loading`/`Success`/`Error`) 단방�
 - 서명 검증: `apksigner verify app/build/outputs/apk/release/app-release.apk`.
 - `isMinifyEnabled = false` (현재 R8 미적용). ProGuard 규칙은 `app/proguard-rules.pro`.
 
-> ⚠️ **Release 지도가 안 보이면** 릴리스 keystore의 **SHA-1**을 Google Cloud Console의 Maps 키에 등록한다. Debug↔Release 서명 충돌 시 기존 앱 삭제 후 재설치.
+> [!WARNING]
+> **Release 지도가 안 보이면** 릴리스 keystore의 **SHA-1**을 Google Cloud Console의 Maps 키에 등록한다. Debug↔Release 서명 충돌 시 기존 앱 삭제 후 재설치.
 
 ---
 
@@ -320,7 +331,8 @@ Kotlin `Flow`/`StateFlow` + `LoadState<T>`(`Loading`/`Success`/`Error`) 단방�
 ./gradlew connectedDebugAndroidTest      # 계측 테스트(기기/에뮬레이터 필요)
 ```
 
-> ℹ️ 코어 순수 로직(매퍼/포맷/파싱/페이지네이션)은 커버되나, ViewModel·Repository 통합 및 UI/E2E 테스트는 아직 없어 확충이 필요하다. (→ 12장)
+> [!NOTE]
+> 코어 순수 로직(매퍼/포맷/파싱/페이지네이션)은 커버되나, ViewModel·Repository 통합 및 UI/E2E 테스트는 아직 없어 확충이 필요하다. (→ 12장)
 
 ---
 
@@ -364,7 +376,9 @@ adb logcat | grep -Ei "AndroidRuntime|Analytics|okhttp"         # 크래시/이�
 - **버전 관리 / 릴리스 추적**: 현재 `versionName`/`versionCode` = `1.2`/`2`, 릴리스는 `v1.2` 태그로 커밋을 고정한다. 다만 버전 bump·태깅·릴리스 노트가 **수동**이고 CI 자동화가 없다 — 릴리스 스크립트/워크플로로 자동화하고 `versionCode` 증가 규칙을 정립하는 것이 좋다.
 - **데이터 레이어 이원화**: `ui/dashboard`의 Supabase 경로가 실제 화면을 구동하고, `data/`의 Retrofit 계층은 팀 REST BE 대비로 병존. 팀 BE 확정 시 `DashboardRepository` 구현을 교체하고 `data/`로 일원화 필요.
 - **네비게이션**: NavHost route가 `main` 하나뿐이고 화면 전환이 `HomeScreen` 내부 상태에 묶여 있음. 로그인/로딩 화면 도입 시 route 기반으로 재정비 필요(코드 내 TODO).
-- **Analytics**: `DebugAnalyticsLogger`는 Logcat 출력 스캐폴딩. 실제 수집 필요 시 실 구현체로 `@Binds` 교체.
+- **Analytics**: `DebugAnalyticsLogger`는 Logcat 출력 스캐폴딩. 실제 수집 필요 시 실 구현체로 Hilt 바인딩(`@Provides`) 교체.
+- **카트 마커 위치 합성**: Supabase 카트에 실좌표(`lat`/`lng`)가 없으면 `SupabaseDashboardRepository`가 지오펜스 박스 기준으로 위치를 합성한다(위반 = 바깥, 그 외 = 안쪽). 실데이터 연동 시 제거 대상.
+- **로컬 저장 미연결**: 위반 확인 · 선택 사이트 DataStore가 화면 흐름에 연결되지 않았다.
 - **테스트 커버리지**: 코어 로직/매퍼는 단위 테스트로 커버되나 ViewModel·Repository 통합 및 UI/E2E는 없음 — 확충 필요.
 
 ### 이후 유지보수 시 주의할 사항
@@ -382,6 +396,6 @@ adb logcat | grep -Ei "AndroidRuntime|Analytics|okhttp"         # 크래시/이�
 
 - **커밋 메시지**: [Conventional Commits](https://www.conventionalcommits.org) — `feat` / `fix` / `docs` / `refactor` / `test` / `chore` 등. 예: `fix(map): correct heatmap fit`.
 - **브랜치 전략**: GitHub Flow — `main`에서 분기 → PR로 병합. 병합은 **Squash & Merge**(PR 1개 = `main` 커밋 1개), 병합 후 브랜치는 삭제. **푸시된 히스토리는 리라이트하지 않는다.**
-- **리뷰/검증**: PR·`main` push 시 **CI(GitHub Actions, `.github/workflows/ci.yml`)가 빌드 + 단위 테스트를 자동 실행**한다. PR 템플릿(`.github/pull_request_template.md`)을 채운다. (detekt/ktlint·SonarQube 등 정적 분석은 아직 미도입 — 후속.)
+- **리뷰/검증**: PR·`main` push 시 **CI(GitHub Actions, `.github/workflows/ci.yml`)가 `testDebugUnitTest`(디버그 컴파일 + 단위 테스트)를 자동 실행**한다. PR 템플릿(`.github/pull_request_template.md`)을 채운다. (detekt/ktlint·SonarQube 등 정적 분석은 아직 미도입 — 후속.)
 - **코드 스타일**: 주변 코드와 일관되게 작성(네이밍·주석 밀도·관용구).
 - **시크릿**: `local.properties` · `keystore.properties` · `*.jks`는 절대 커밋 금지(gitignore 유지).
